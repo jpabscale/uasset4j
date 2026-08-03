@@ -1,0 +1,17 @@
+// Ported from UAssetAPI (MIT) — Copyright (c) 2020-2026 atenfyr
+// Source: UAssetAPI/UAssetAPI/Kismet/Bytecode/Expressions/EX_ClassContext.cs
+package com.github.jpabscale.uasset4j.kismet.bytecode.expressions
+
+import com.github.jpabscale.uasset4j.AssetBinaryReader
+import com.github.jpabscale.uasset4j.AssetBinaryWriter
+import com.github.jpabscale.uasset4j.kismet.bytecode.EExprToken
+
+class EX_ClassContext : EX_Context() {
+    override val Token: EExprToken get() = EExprToken.EX_ClassContext
+
+    override fun Read(reader: AssetBinaryReader) {
+        super.Read(reader)
+    }
+
+    override fun Write(writer: AssetBinaryWriter): Int = super.Write(writer)
+}

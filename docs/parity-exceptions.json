@@ -1,0 +1,17 @@
+{
+  "_comment": "Approved parity divergences. ONLY the user may instruct additions/modifications/revocations. Agents must never edit this file (see AGENTS.md). Tools bucket matching entries as EXC (visible, never silent) and --check-stale flags entries that no longer diverge for revocation.",
+  "exceptions": [
+    {
+      "id": "EXC-001",
+      "tool": "both",
+      "scope": {
+        "kind": "behavior",
+        "target": ".usmap.gz gzip-compressed usmap mappings"
+      },
+      "approved_by": "jpabscale",
+      "approved_on": "2026-08-03",
+      "reason": "Usmap constructor decompresses .usmap.gz before ReadUSMAP. The C# oracle only recognizes .usmap/.jmap/.jmap.gz; a .usmap.gz falls through to ReadUSMAP and throws FormatException, so uasset4j succeeds where the oracle fails.",
+      "status": "active"
+    }
+  ]
+}
