@@ -2,7 +2,8 @@
 
 This file is the single source of truth for agent behavior. It is written to be read before doing
 any work here. The one-line summary: **the port is a statement-parallel translation of the pinned
-UAssetAPI C# source — never a rewrite.**
+UAssetAPI C# source — never a rewrite.** The `curves/` package is an Apache-2.0 derivative of
+CUE4Parse, governed by EXC-002.
 
 ## Hard rules
 
@@ -41,6 +42,7 @@ Before changing anything, record and report:
   - `python3 tools/sweep.py uassetcli/build/libs/uassetcli.jar <csdir> uassetapi/src/test/resources/testassets --only TestUE5_4` → `MATCH 31 DIFF 0` (`EXC` may be non-zero only for approved exceptions in `docs/parity-exceptions.json`)
   - SoA differential: `tools/differential.sh` against the `SandsOfAura_1.01.25.usmap` assets.
   - `python3 tools/audit_parity.py` → `PARITY AUDIT: GREEN`.
+  - `python3 tools/cue4parse_parity.py` → `PARITY AUDIT: GREEN`.
   - `./gradlew build` → green.
 
 A fix that doesn't show its baseline (before→after) is incomplete. Regressions (a previously-MATCH
@@ -52,6 +54,14 @@ asset turning DIFF) must be caught and fixed before the task is considered done.
   each ported file is fine; do not add prose comments. (The JSON layer, CLI, tools, and tests may
   carry doc comments where they explain non-obvious parity behavior — this is the documented
   exception in `docs/mapping.md`.)
+- **CUE4Parse derivative files** (`curves/`, `exporttypes/CurveTableExport.kt`) are Apache-2.0
+  licensed (EXC-002). They carry `//@parity:on EXC-002` / `//@parity:off EXC-002` markers and
+  attribution headers. These files are NOT statement-parallel UAssetAPI ports — they are new code
+  derived from CUE4Parse. Review them against CUE4Parse's source, not UAssetAPI. Run
+  `tools/cue4parse_parity.py` to verify C# member coverage.
+- **Exceptional regions** (`//@parity:on`/`//@parity:off` blocks) must be reviewed whenever the
+  files they wrap are changed. Reviewers should verify the region's exception is still valid and
+  the markers are balanced.
 - **`$type` strings** in the JSON layer MUST stay `UAssetAPI.<Ns>.<Class>, UAssetAPI` — never
   rewrite them to the Kotlin package.
 - **No new dependencies** without explicit approval. The zstd seam is the only native/third-party
@@ -99,23 +109,39 @@ Reject a ported file if ANY of:
    that trades O(1)/O(n) for O(n)/O(n²) per call — like the `FixNameMapLookupIfNeeded` guard that
    rebuilt a `toSet()` comparison on every name-map access — must be rejected and restored to the
    C# shape.
+9. **CUE4Parse derivative files** have not been verified with `tools/cue4parse_parity.py`.
+   Run the checker and confirm GREEN before accepting.
+10. **Exceptional regions** have not been reviewed when the wrapped file changed. Reviewers must
+    verify `//@parity:on`/`//@parity:off` markers are balanced, reference valid EXC ids, and the
+    underlying exception is still valid.
 
 Acceptance bar for a parity task: statement-level review done, algorithmic-complexity review done
 (each method's asymptotic behavior matches its C# source — no functionally-identical-but-slower
-rewrites), `audit_parity.py` GREEN, `./gradlew build` green, and the corpus sweep at
-`MATCH 68 DIFF 0` (or the target stated in the task) with no regressions.
+rewrites), `audit_parity.py` GREEN, `cue4parse_parity.py` GREEN, `./gradlew build` green, and the
+corpus sweep at `MATCH 369 DIFF 0` (or the target stated in the task) with no regressions.
+
+For CUE4Parse derivative files (`curves/`), the acceptance bar is: `cue4parse_parity.py` GREEN,
+`./gradlew build` green, `@Test` methods pass, and the pre-existing corpus sweep unchanged
+(derivative code does not alter the UAssetAPI-ported property path).
 
 ## Campaign insights
 
 Lessons learned while getting the corpus to full parity — treat as operational guidance.
 
 - **The oracle has known limitations; recognize them, don't fight them.** The corpus sweep's
-  `BOTHERR` bucket (baseline: **301 assets**) is cases where *both* the JVM and the C# oracle fail
-  identically — the C# binary itself crashes or throws (core dumps on many Blueprint/Class assets,
-  package-level compression, `NullReferenceException` on some `fromjson` round-trips). These are
-  oracle limitations, **not port bugs**: matching the C# exception is the correct outcome. Only a
-  JVM failure where the C# succeeds (`JVMERR`, or a `DIFF`) is a real defect. Do not "fix" an
-  asset that is a verified identical both-sides failure.
+  `BOTHERR` bucket is cases where *both* the JVM and the C# oracle fail identically — the C#
+  binary itself crashes or throws (core dumps on many Blueprint/Class assets, package-level
+  compression, `NullReferenceException` on some `fromjson` round-trips). These are oracle
+  limitations, **not port bugs**: matching the C# exception is the correct outcome. Only a JVM
+  failure where the C# succeeds (`JVMERR`, or a `DIFF`) is a real defect. Do not "fix" an asset
+  that is a verified identical both-sides failure. Two oracle quirks are worked around in
+  `tools/sweep.py`: XOR-encrypted fixtures (e.g. Ace Combat 7) are decrypted with a Python
+  `AC7Decrypt` port before the parity CLIs, mirroring the C# test; and the C# oracle fails on the
+  same file opened concurrently, so each asset is copied into a per-worker dir.
+- **The unversioned round-trip bug is pre-existing.** Both UAssetAPI (C#) and uasset4j lose the
+  2-byte FUnversionedHeader fragment on JSON→uasset round-trip for unversioned assets. This causes
+  the re-read to fall to `RawExport`. This is NOT caused by the curve code and affects ALL
+  unversioned assets. Do not flag it as a curve regression.
 - **Delegate self-contained parity units to a fresh-context agent with its own test loop.** The
   corpus-fix campaign worked best when a single root-cause group (e.g. "Kismet `$type` JSON",
   "export type dispatch") was handed to one agent that reproduced, fixed at the source, rebuilt the
@@ -133,12 +159,18 @@ Lessons learned while getting the corpus to full parity — treat as operational
 3. `docs/port-tracker.md` — which files are ported, deferred, and how to regenerate oracle data.
 4. This file — agent rules (always).
 5. `tools/sweep.py` + `tools/differential.sh` — how functional parity is verified.
+6. `tools/cue4parse_parity.py` — how CUE4Parse curve parity is verified.
+6. `tools/cue4parse_parity.py` — how CUE4Parse curve parity is verified.
 
 ## Key paths
 
 - Pinned C# source (READ-ONLY reference): `/home/jpabscale/Repositories/UAssetCLI/UAssetAPI/UAssetAPI/`
+- CUE4Parse source (READ-ONLY reference): `/tmp/automod/CUE4Parse/CUE4Parse/`
 - Oracle binary: `/home/jpabscale/Repositories/automod-vscode/automod/tools/UAssetCLI/UAssetCLI.dll`
   (net10.0, run with `~/.dotnet/dotnet`); JVM jar: `uassetcli/build/libs/uassetcli.jar`.
 - Corpus: `uassetapi/src/test/resources/testassets/` (mirrors `UAssetAPI.Tests/TestAssets/`).
 - Parity tools: `tools/sweep.py` (parallel corpus differential), `tools/differential.sh`,
-  `tools/audit_parity.py` (member-name audit), `tools/concurrency_stress.sh`.
+  `tools/audit_parity.py` (UAssetAPI member-name audit), `tools/cue4parse_parity.py`
+  (CUE4Parse curve-type audit), `tools/concurrency_stress.sh`.
+- Curve code: `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/curves/` (Apache-2.0
+  derivatives), `exporttypes/CurveTableExport.kt`.

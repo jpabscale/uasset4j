@@ -57,9 +57,19 @@ jobs:
           dst = "uassetapi/src/test/resources/testassets"
           shutil.rmtree(dst, ignore_errors=True)
           shutil.move(matches[0], dst)
+
+          # AC7Key.bin is a UAssetAPI resource (Ace Combat 7 decrypt key), not committed here.
+          key_matches = glob.glob("uassetapi-src/*/UAssetAPI/Resources/AC7Key.bin")
+          if not key_matches:
+              raise SystemExit("AC7Key.bin not found in tarball")
+          key_dst = "uassetapi/src/main/resources/AC7Key.bin"
+          os.makedirs(os.path.dirname(key_dst), exist_ok=True)
+          shutil.copy2(key_matches[0], key_dst)
+
           os.remove(tarball)
           shutil.rmtree("uassetapi-src")
           print("corpus ->", dst)
+          print("AC7Key.bin ->", key_dst)
           PY
 
       - name: Build and test

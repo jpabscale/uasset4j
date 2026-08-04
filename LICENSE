@@ -6,6 +6,13 @@ Copyright (c) 2026 jpabscale
 This project is a Kotlin/JVM port of UAssetAPI
 (https://github.com/atenfyr/UAssetAPI), which is licensed under the MIT License.
 
+The curve support under `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/curves/`
+and `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/exporttypes/CurveTableExport.kt`
+is derivative work of CUE4Parse (https://github.com/FabianFG/CUE4Parse), which is
+licensed under the Apache License 2.0. That derivative portion is distributed under
+the Apache License 2.0; the license text and CUE4Parse NOTICE are included in the
+`NOTICE` file of this repository.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

@@ -125,6 +125,7 @@ import com.github.jpabscale.uasset4j.propertytypes.structs.engine.SkeletalMeshSa
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.SmartNamePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.SplinePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.StringCurveKeyPropertyData
+import com.github.jpabscale.uasset4j.propertytypes.structs.engine.UniqueNetIdReplPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.Vector2MaterialInputPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.VectorMaterialInputPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.ViewTargetBlendParamsPropertyData
@@ -410,6 +411,7 @@ object MainSerializer {
         Register { name -> UInt16PropertyData(name) }
         Register { name -> UInt32PropertyData(name) }
         Register { name -> UInt64PropertyData(name) }
+        Register { name -> UniqueNetIdReplPropertyData(name) }
         Register { name -> UnknownPropertyData(name) }
         Register { name -> UniversalObjectLocatorFragmentPropertyData(name) }
         Register { name -> Utf8StrPropertyData(name) }
@@ -436,7 +438,14 @@ object MainSerializer {
     fun GenerateUnversionedHeader(data: MutableList<PropertyData>, parentName: FName?, parentModulePath: FName?, asset: UAsset): FUnversionedHeader? {
         val sortedProps = mutableListOf<PropertyData>()
         if (!asset.HasUnversionedProperties) return null
-        if (asset.Mappings == null) return null
+//@parity:on EXC-003
+        if (asset.Mappings == null) {
+            throw IllegalStateException(
+                "Unversioned asset requires mappings to be loaded: cannot serialize unversioned properties " +
+                    "without a usmap schema (re-attach Mappings after DeserializeJson before writing)",
+            )
+        }
+//@parity:off EXC-003
 
         var firstNumAll = Int.MAX_VALUE
         var lastNumAll = Int.MIN_VALUE

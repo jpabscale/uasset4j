@@ -15,6 +15,7 @@ import com.github.jpabscale.uasset4j.UAsset
 import com.github.jpabscale.uasset4j.exporttypes.EClassSerializationControlExtension
 import com.github.jpabscale.uasset4j.exporttypes.Export
 import com.github.jpabscale.uasset4j.exporttypes.UDataTable
+import com.github.jpabscale.uasset4j.curves.UCurveTable
 import com.github.jpabscale.uasset4j.propertytypes.objects.EPropertyTagExtension
 import com.github.jpabscale.uasset4j.propertytypes.objects.EPropertyTagFlags
 import com.github.jpabscale.uasset4j.propertytypes.objects.FSoftObjectPath
@@ -172,6 +173,16 @@ object UAssetJson {
             addDeserializer(Double::class.java, FSignedZeroDoubleJsonConverter.deserializer)
             addSerializer(FPropertyTypeName::class.java, FPropertyTypeNameJsonConverter())
             addDeserializer(FPropertyTypeName::class.java, FPropertyTypeNameJsonConverter.deserializer)
+            addSerializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber::class.java, FFrameNumberJsonSerializer())
+            addDeserializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber::class.java, FFrameNumberJsonDeserializer())
+            addSerializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound::class.java, TRangeBoundJsonSerializer())
+            addDeserializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound::class.java, TRangeBoundJsonDeserializer())
+            addSerializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange::class.java, TRangeJsonSerializer())
+            addDeserializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange::class.java, TRangeJsonDeserializer())
+            addSerializer(com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox::class.java, TBoxJsonSerializer())
+            addDeserializer(com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox::class.java, TBoxJsonDeserializer())
+            addSerializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment::class.java, FMovieSceneSegmentJsonSerializer())
+            addDeserializer(com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment::class.java, FMovieSceneSegmentJsonDeserializer())
             addSerializer(com.github.jpabscale.uasset4j.exporttypes.FStringTable::class.java, FStringTableJsonConverter())
             addDeserializer(com.github.jpabscale.uasset4j.exporttypes.FStringTable::class.java, FStringTableJsonConverter.deserializer)
             addSerializer(com.github.jpabscale.uasset4j.propertytypes.objects.FFormatArgumentValue::class.java, FFormatArgumentValueJsonSerializer())
@@ -218,6 +229,7 @@ object UAssetJson {
         addMixIn(FGenerationInfo::class.java, FGenerationInfoMixin::class.java)
         addMixIn(FEngineVersion::class.java, FEngineVersionMixin::class.java)
         addMixIn(UDataTable::class.java, UDataTableMixin::class.java)
+        addMixIn(UCurveTable::class.java, UCurveTableMixin::class.java)
         addMixIn(MapPropertyData::class.java, MapPropertyDataMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.exporttypes.ClassExport::class.java, ClassExportMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.fieldtypes.UField::class.java, FieldTypeInfoMixin::class.java)
@@ -242,6 +254,11 @@ object UAssetJson {
         addMixIn(com.github.jpabscale.uasset4j.unrealtypes.objects.engine.FSkeletalMeshSamplingRegionBuiltData::class.java, FSkeletalMeshSamplingRegionBuiltDataMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.propertytypes.structs.engine.FStringCurveKey::class.java, FStringCurveKeyMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.unrealtypes.objects.engine.FWeightedRandomSampler::class.java, FWeightedRandomSamplerMixin::class.java)
+        addMixIn(com.github.jpabscale.uasset4j.unrealtypes.objects.engine.FUniqueNetId::class.java, FUniqueNetIdMixin::class.java)
+        addMixIn(com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneEvaluationKey::class.java, FMovieSceneEvaluationKeyMixin::class.java)
+        addMixIn(com.github.jpabscale.uasset4j.exporttypes.SerializedInterfaceReference::class.java, SerializedInterfaceReferenceMixin::class.java)
+        addMixIn(com.github.jpabscale.uasset4j.kismet.bytecode.expressions.FKismetSwitchCase::class.java, FKismetSwitchCaseMixin::class.java)
+        addMixIn(com.github.jpabscale.uasset4j.propertytypes.objects.FDelegate::class.java, FDelegateMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.propertytypes.objects.FSoftObjectPath::class.java, FSoftObjectPathMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.propertytypes.objects.FTopLevelAssetPath::class.java, FTopLevelAssetPathMixin::class.java)
         addMixIn(com.github.jpabscale.uasset4j.unrealtypes.FPropertyTypeNameNode::class.java, FPropertyTypeNameNodeMixin::class.java)
@@ -282,6 +299,12 @@ object UAssetJson {
     fun read(json: java.io.InputStream): UAsset {
         FNameToBeFilled.clear()
         return mapper.readValue(json, UAsset::class.java)
+    }
+
+    /** Deserializes a [UAsset] from an already-parsed JSON [node]. */
+    fun read(node: com.fasterxml.jackson.databind.JsonNode): UAsset {
+        FNameToBeFilled.clear()
+        return mapper.treeToValue(node, UAsset::class.java)
     }
 
     fun <T : Any> readGeneric(json: String, target: Class<T>): T {

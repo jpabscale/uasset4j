@@ -327,6 +327,14 @@ abstract class BasePropertyData<T>(private val accessors: StructAccessors<T>) : 
 
     override val HasCustomStructSerialization: Boolean get() = true
 
+    override fun InitializeZero(reader: AssetBinaryReader) {
+        // C# Newtonsoft serializes a zero (default) struct-typed property as its default instance
+        // (e.g. an empty FSoftObjectPath), not JSON null. Initialize the default value to mirror it.
+        if (Value == null) {
+            Value = accessors.defaultValue()
+        }
+    }
+
     override fun Read(reader: AssetBinaryReader, includeHeader: Boolean, leng1: Long, leng2: Long, serializationContext: PropertySerializationContext) {
         if (includeHeader) {
             this.ReadEndPropertyTag(reader)

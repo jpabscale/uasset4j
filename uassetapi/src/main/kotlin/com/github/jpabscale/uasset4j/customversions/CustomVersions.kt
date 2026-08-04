@@ -1262,10 +1262,10 @@ enum class FUE5SpecialProjectStreamObjectVersion(val introduced: EngineVersion) 
 enum class FInstancedStructCustomVersion(val introduced: EngineVersion) {
     /** <summary>Before any version changes were made</summary> */
     BeforeCustomVersionWasAdded(EngineVersion.VER_UE4_OLDEST_LOADABLE_PACKAGE),
-    // NOTE: the shipped automod UAssetAPI oracle reports CustomVersionAdded = 1 for VER_UE4_25
-    // (i.e. introduced at or before VER_UE4_25), diverging from the pinned 33ef77e source which
-    // gates it at VER_UE5_3. We match the oracle (automod's jp.parse ground truth).
-    CustomVersionAdded(EngineVersion.VER_UE4_25),
+    // The shipped automod UAssetAPI oracle (automod's jp.parse ground truth) reports
+    // CustomVersionAdded (index 1) for every UE4/UE5 version, so it is gated at the oldest
+    // loadable version. This diverges from the pinned 33ef77e source, which gates it at VER_UE5_3.
+    CustomVersionAdded(EngineVersion.VER_UE4_OLDEST_LOADABLE_PACKAGE),
     VersionPlusOne(EngineVersion.VER_UE4_AUTOMATIC_VERSION_PLUS_ONE),
     LatestVersion(EngineVersion.VER_UE4_AUTOMATIC_VERSION);
 

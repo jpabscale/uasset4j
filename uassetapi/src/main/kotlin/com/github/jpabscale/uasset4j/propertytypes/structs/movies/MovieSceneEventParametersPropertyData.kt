@@ -19,6 +19,8 @@ class FMovieSceneEventParameters {
         StructBytes = structBytes
     }
 
+    constructor()
+
     constructor(reader: AssetBinaryReader) {
         StructType = FSoftObjectPath(reader)
         val length = reader.ReadInt32()

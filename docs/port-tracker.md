@@ -3,6 +3,10 @@
 Tracks each upstream C# file to its Kotlin port and tests. Status: **not ported** | **stub** (skeleton,
 throws for unported paths) | **ported** (statement-parallel, may defer downstream deps).
 
+> The dedicated curve types (`curves/`, `exporttypes/CurveTableExport.kt`) are **not** UAssetAPI
+> ports — they are Apache-2.0 derivative work of CUE4Parse (EXC-002). They are out of scope of this
+> tracker; see `docs/mapping.md` §Curve support.
+
 ## Port tree (dependency levels, ported bottom-up)
 
 Deploy agents at the leaves of a level in parallel; **before moving up a level, resolve any mapping

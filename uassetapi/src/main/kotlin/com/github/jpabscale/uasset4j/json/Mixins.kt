@@ -51,6 +51,10 @@ internal interface FEngineVersionMixin
 @JsonTypeIdResolver(UAssetTypeIdResolver::class)
 internal interface UDataTableMixin
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
+@JsonTypeIdResolver(UAssetTypeIdResolver::class)
+internal interface UCurveTableMixin
+
 /**
  * MapPropertyData.Value is a C# `TMap<PropertyData, PropertyData>` serialized by TMapJsonConverter
  * as an ordered array of [key, value] pairs.
@@ -211,6 +215,31 @@ internal interface FSoftObjectPathMixin
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
 @JsonTypeIdResolver(UAssetTypeIdResolver::class)
 internal interface FTopLevelAssetPathMixin
+
+/** FUniqueNetId: `$type` + Type/Contents (class under TypeNameHandling.Objects). */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
+@JsonTypeIdResolver(UAssetTypeIdResolver::class)
+internal interface FUniqueNetIdMixin
+
+/** FMovieSceneEvaluationKey: `$type` + SequenceID/TrackIdentifier/SectionIndex. */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
+@JsonTypeIdResolver(UAssetTypeIdResolver::class)
+internal interface FMovieSceneEvaluationKeyMixin
+
+/** SerializedInterfaceReference: `$type` + Class/PointerOffset/bImplementedByK2. */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
+@JsonTypeIdResolver(UAssetTypeIdResolver::class)
+internal interface SerializedInterfaceReferenceMixin
+
+/** FKismetSwitchCase: `$type` + CaseIndexValueTerm/NextOffset/CaseTerm. */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
+@JsonTypeIdResolver(UAssetTypeIdResolver::class)
+internal interface FKismetSwitchCaseMixin
+
+/** FDelegate: `$type` + Object/Delegate. */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)
+@JsonTypeIdResolver(UAssetTypeIdResolver::class)
+internal interface FDelegateMixin
 
 /** FPropertyTypeNameNode: `$type` + Name/InnerCount. */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "\$type", visible = true)

@@ -1,0 +1,9 @@
+This library includes material developed by the following third-party libraries:
+
+- UAssetAPI (https://github.com/atenfyr/UAssetAPI) - Copyright (c) 2020-2026 atenfyr. Licensed under the MIT License.
+- CUE4Parse (https://github.com/FabianFG/CUE4Parse) - Copyright (c) FabianFG and contributors. Licensed under the Apache License 2.0.
+
+The files under `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/curves/`
+and `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/exporttypes/CurveTableExport.kt`
+are derivative work of CUE4Parse's curve support (Apache-2.0), and are distributed
+under the Apache License 2.0. See the license text below.

@@ -461,9 +461,210 @@ class DynamicScalarValueSerializer : JsonSerializer<Any>() {
     }
 }
 
+/** Generic POCO `$type` emission (Newtonsoft TypeNameHandling.Objects): a generic container's C# type
+ * string embeds its type argument, e.g. `TRange`1[[System.Single, System.Private.CoreLib]]`. The
+ * Kotlin generic param is erased at runtime, so the element is detected from the value's fields
+ * (Float / FFrameNumber / FVector). */
+private fun genericTypeId(kind: String, element: String): String =
+    """$kind`1[[$element]], UAssetAPI"""
+
+private fun genericElementId(v: Any): String? = when (v) {
+    is Float -> "System.Single, System.Private.CoreLib"
+    is com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber -> "UAssetAPI.UnrealTypes.FFrameNumber, UAssetAPI"
+    is com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.FVector -> "UAssetAPI.UnrealTypes.FVector, UAssetAPI"
+    else -> null
+}
+
+/** FFrameNumber: `$type` + Value. */
+class FFrameNumberJsonSerializer : JsonSerializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber>() {
+    override fun serialize(value: com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber, gen: JsonGenerator, provider: SerializerProvider) {
+        gen.writeStartObject()
+        gen.writeStringField("\$type", "UAssetAPI.UnrealTypes.FFrameNumber, UAssetAPI")
+        gen.writeNumberField("Value", value.Value)
+        gen.writeEndObject()
+    }
+}
+
+/** TRangeBound<T>: `$type` (with generic arg) + Type/Value. */
+class TRangeBoundJsonSerializer : JsonSerializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<*>>() {
+    private val scalar = DynamicScalarValueSerializer()
+    override fun serialize(value: com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<*>, gen: JsonGenerator, provider: SerializerProvider) {
+        val element = genericElementId(value.Value as Any ?: 0f)
+            ?: return provider.defaultSerializeValue(value, gen)
+        gen.writeStartObject()
+        gen.writeStringField("\$type", genericTypeId("UAssetAPI.UnrealTypes.TRangeBound", element))
+        gen.writeStringField("Type", value.Type.name)
+        gen.writeFieldName("Value")
+        scalar.serialize(value.Value, gen, provider)
+        gen.writeEndObject()
+    }
+}
+
+/** TRange<T>: `$type` (with generic arg) + LowerBound/UpperBound. */
+class TRangeJsonSerializer : JsonSerializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<*>>() {
+    override fun serialize(value: com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<*>, gen: JsonGenerator, provider: SerializerProvider) {
+        val element = genericElementId(value.LowerBound.Value as Any ?: 0f)
+            ?: return provider.defaultSerializeValue(value, gen)
+        gen.writeStartObject()
+        gen.writeStringField("\$type", genericTypeId("UAssetAPI.UnrealTypes.TRange", element))
+        gen.writeFieldName("LowerBound")
+        provider.defaultSerializeValue(value.LowerBound, gen)
+        gen.writeFieldName("UpperBound")
+        provider.defaultSerializeValue(value.UpperBound, gen)
+        gen.writeEndObject()
+    }
+}
+
+/** TBox<T>: `$type` (with generic arg) + Min/Max/IsValid. */
+class TBoxJsonSerializer : JsonSerializer<com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox<*>>() {
+    override fun serialize(value: com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox<*>, gen: JsonGenerator, provider: SerializerProvider) {
+        val element = genericElementId(value.Min as Any)
+            ?: return provider.defaultSerializeValue(value, gen)
+        gen.writeStartObject()
+        gen.writeStringField("\$type", genericTypeId("UAssetAPI.UnrealTypes.TBox", element))
+        gen.writeFieldName("Min")
+        provider.defaultSerializeValue(value.Min, gen)
+        gen.writeFieldName("Max")
+        provider.defaultSerializeValue(value.Max, gen)
+        gen.writeNumberField("IsValid", value.IsValid.toInt())
+        gen.writeEndObject()
+    }
+}
+
+/** FMovieSceneSegment: `$type` + RangeOld/Range/ID/bAllowEmpty/Impls. The unused range (C# struct,
+ * never null) is emitted as its default TRange rather than JSON null. */
+class FMovieSceneSegmentJsonSerializer : JsonSerializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment>() {
+    override fun serialize(value: com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment, gen: JsonGenerator, provider: SerializerProvider) {
+        gen.writeStartObject()
+        gen.writeStringField("\$type", "UAssetAPI.PropertyTypes.Structs.FMovieSceneSegment, UAssetAPI")
+        gen.writeFieldName("RangeOld")
+        val rangeOld = value.RangeOld ?: defaultFloatRange()
+        provider.defaultSerializeValue(rangeOld, gen)
+        gen.writeFieldName("Range")
+        val range = value.Range ?: defaultFrameRange()
+        provider.defaultSerializeValue(range, gen)
+        gen.writeFieldName("ID")
+        gen.writeNumber(value.ID)
+        gen.writeFieldName("bAllowEmpty")
+        gen.writeBoolean(value.bAllowEmpty)
+        gen.writeFieldName("Impls")
+        gen.writeStartArray()
+        for (impl in value.Impls) {
+            gen.writeObject(impl)
+        }
+        gen.writeEndArray()
+        gen.writeEndObject()
+    }
+
+    private fun defaultFrameRange() =
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange(
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive,
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber(0),
+            ),
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive,
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber(0),
+            ),
+        )
+
+    private fun defaultFloatRange() =
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange(
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive,
+                0f,
+            ),
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive,
+                0f,
+            ),
+        )
+}
+
+/** FFrameNumber deserializer. */
+class FFrameNumberJsonDeserializer : JsonDeserializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber {
+        val node = p.readValueAsTree<com.fasterxml.jackson.databind.JsonNode>() ?: return com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber(0)
+        return com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber(node.get("Value")?.asInt() ?: 0)
+    }
+}
+
+/** TRangeBound<T> deserializer: the element type is encoded in the `$type` generic arg. */
+class TRangeBoundJsonDeserializer : JsonDeserializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<*>>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<*> {
+        val node = p.readValueAsTree<com.fasterxml.jackson.databind.JsonNode>() ?: return com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<Float>()
+        val type = com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.entries
+            .firstOrNull { it.name == node.get("Type")?.asText() }
+            ?: com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive
+        val valueNode = node.get("Value")
+        val isFrame = node.get("\$type")?.asText()?.contains("FFrameNumber") == true
+        val codec = p.codec as ObjectMapper
+        return if (isFrame) {
+            val fn = codec.treeToValue(valueNode, com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber::class.java)
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(type, fn)
+        } else {
+            val f = valueNode?.asDouble()?.toFloat() ?: 0f
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(type, f)
+        }
+    }
+}
+
+/** TRange<T> deserializer. */
+class TRangeJsonDeserializer : JsonDeserializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<*>>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<*> {
+        val node = p.readValueAsTree<com.fasterxml.jackson.databind.JsonNode>() ?: return com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange(
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive, 0f,
+            ),
+            com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound(
+                com.github.jpabscale.uasset4j.propertytypes.structs.movies.ERangeBoundTypes.Exclusive, 0f,
+            ),
+        )
+        val codec = p.codec as ObjectMapper
+        @Suppress("UNCHECKED_CAST")
+        val lower = codec.treeToValue(node.get("LowerBound"), com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound::class.java) as com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<Any>
+        @Suppress("UNCHECKED_CAST")
+        val upper = codec.treeToValue(node.get("UpperBound"), com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound::class.java) as com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound<Any>
+        @Suppress("UNCHECKED_CAST")
+        return com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange(lower, upper) as com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<*>
+    }
+}
+
+/** TBox<T> deserializer: element type from the `$type` generic arg (FVector supported). */
+class TBoxJsonDeserializer : JsonDeserializer<com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox<*>>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox<*> {
+        val node = p.readValueAsTree<com.fasterxml.jackson.databind.JsonNode>() ?: return com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox<com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.FVector>()
+        val codec = p.codec as ObjectMapper
+        val min = codec.treeToValue(node.get("Min"), com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.FVector::class.java)
+        val max = codec.treeToValue(node.get("Max"), com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.FVector::class.java)
+        val isValid = node.get("IsValid")?.asInt() ?: 0
+        return com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox(min, max, isValid.toByte())
+    }
+}
+
+/** FMovieSceneSegment deserializer. */
+class FMovieSceneSegmentJsonDeserializer : JsonDeserializer<com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment {
+        val node = p.readValueAsTree<com.fasterxml.jackson.databind.JsonNode>() ?: return com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment()
+        val codec = p.codec as ObjectMapper
+        val res = com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment()
+        res.ID = node.get("ID")?.asInt() ?: 0
+        res.bAllowEmpty = node.get("bAllowEmpty")?.asBoolean() ?: false
+        @Suppress("UNCHECKED_CAST")
+        res.Range = codec.treeToValue(node.get("Range"), com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange::class.java) as com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber>
+        @Suppress("UNCHECKED_CAST")
+        res.RangeOld = codec.treeToValue(node.get("RangeOld"), com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange::class.java) as com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange<Float>
+        val impls = node.get("Impls")
+        res.Impls = if (impls != null && impls.isArray) {
+            val list = codec.readValue(impls.traverse(p.codec as ObjectMapper), object : com.fasterxml.jackson.core.type.TypeReference<List<com.github.jpabscale.uasset4j.propertytypes.structs.StructPropertyData>>() {})
+            list.toTypedArray()
+        } else emptyArray()
+        return res
+    }
+}
+
 /** Newtonsoft FPropertyTypeNameConverter: nulls out unless ShouldSerializeNodes; else the nodes array. */
-class FPropertyTypeNameJsonConverter : StdSerializer<FPropertyTypeName>(FPropertyTypeName::class.java) {
-    override fun serialize(value: FPropertyTypeName, gen: JsonGenerator, provider: SerializerProvider) {
+class FPropertyTypeNameJsonConverter : StdSerializer<FPropertyTypeName>(FPropertyTypeName::class.java) {    override fun serialize(value: FPropertyTypeName, gen: JsonGenerator, provider: SerializerProvider) {
         if (!value.ShouldSerializeNodes) {
             gen.writeNull()
         } else {

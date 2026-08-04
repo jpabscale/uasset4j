@@ -14,6 +14,7 @@ import com.github.jpabscale.uasset4j.propertytypes.structs.LevelSequenceObjectRe
 import com.github.jpabscale.uasset4j.propertytypes.structs.StructPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.MaterialInputPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.TPerPlatformPropertyData
+import com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound
 import com.fasterxml.jackson.databind.BeanDescription
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializationConfig
@@ -120,6 +121,7 @@ class UAssetBeanSerializerModifier : BeanSerializerModifier() {
             "NormalExport" to normalExportOwn,
             "RawExport" to listOf("Data"),
             "DataTableExport" to listOf("Table"),
+            "CurveTableExport" to listOf("Table"),
             "StringTableExport" to listOf("Table"),
             "MetaDataExport" to listOf("ObjectMetaData", "RootMetaData"),
             "LevelExport" to listOf(
@@ -232,6 +234,7 @@ class UAssetBeanSerializerModifier : BeanSerializerModifier() {
             "StructPropertyData" to listOf(
                 "StructType", "SerializeNone", "StructGUID", "SerializationControl", "Operation",
             ),
+            "InstancedStructPropertyData" to listOf("Struct", "Version"),
             "RawStructPropertyData" to listOf("StructType", "SerializeNone", "StructGUID"),
             "SoftObjectPathPropertyData" to listOf("Path"),
             "SoftClassPathPropertyData" to listOf("Path"),
@@ -244,8 +247,6 @@ class UAssetBeanSerializerModifier : BeanSerializerModifier() {
             "ArrayPropertyData" to listOf("ArrayType", "DummyStruct"),
             "SetPropertyData" to listOf("ArrayType", "DummyStruct"),
             "FieldPathPropertyData" to listOf("Path", "ResolvedOwner", "Value"),
-            "DelegatePropertyData" to listOf("Object", "Delegate", "Value"),
-            "MulticastDelegatePropertyData" to listOf("Value"),
             "TextPropertyData" to listOf(
                 "Flags", "HistoryType", "TableId", "Namespace", "CultureInvariantString", "SourceFmt",
                 "Arguments", "ArgumentsData", "TransformType", "SourceValue", "FormatOptions", "TargetCulture",
@@ -255,7 +256,8 @@ class UAssetBeanSerializerModifier : BeanSerializerModifier() {
 
         private fun needsDynamicValueSerializer(clazz: Class<*>): Boolean =
             MaterialInputPropertyData::class.java.isAssignableFrom(clazz) ||
-                TPerPlatformPropertyData::class.java.isAssignableFrom(clazz)
+                TPerPlatformPropertyData::class.java.isAssignableFrom(clazz) ||
+                TRangeBound::class.java.isAssignableFrom(clazz)
 
         fun propertyDataOrder(clazz: Class<*>): List<String> {
             val own = propertyOwn[clazz.simpleName]
@@ -388,6 +390,11 @@ class UAssetBeanSerializerModifier : BeanSerializerModifier() {
                 "InvariantLiteralString", "LiteralString", "StringTableAsset", "StringTableId",
                 "StringTableKey",
             ),
+            "FUniqueNetId" to listOf("Type", "Contents"),
+            "FMovieSceneEvaluationKey" to listOf("SequenceID", "TrackIdentifier", "SectionIndex"),
+            "SerializedInterfaceReference" to listOf("Class", "PointerOffset", "bImplementedByK2"),
+            "FKismetSwitchCase" to listOf("CaseIndexValueTerm", "NextOffset", "CaseTerm"),
+            "FDelegate" to listOf("Object", "Delegate"),
         )
 
         fun pocoOrder(clazz: Class<*>): List<String>? = pocoOrders[clazz.simpleName]

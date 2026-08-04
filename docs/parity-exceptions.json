@@ -12,6 +12,30 @@
       "approved_on": "2026-08-03",
       "reason": "Usmap constructor decompresses .usmap.gz before ReadUSMAP. The C# oracle only recognizes .usmap/.jmap/.jmap.gz; a .usmap.gz falls through to ReadUSMAP and throws FormatException, so uasset4j succeeds where the oracle fails.",
       "status": "active"
+    },
+    {
+      "id": "EXC-002",
+      "tool": "both",
+      "scope": {
+        "kind": "behavior",
+        "target": "curve types: dedicated FRealCurve/FRichCurve/FSimpleCurve/FCompressedRichCurve/FCurveMetaData/FKeyHandle/UCurveTable/CurveTableExport/UCurveVector/UCurveLinearColor/UCurveLinearColorAtlas (new Apache-2.0 derivative, not UAssetAPI)"
+      },
+      "approved_by": "jpabscale",
+      "approved_on": "2026-08-04",
+      "reason": "Curve support is a deliberate extension beyond UAssetAPI (which lacks it), added as Apache-2.0 derivative work of CUE4Parse. New files live in the dedicated curves/ package + CurveTableExport; existing UAssetAPI-ported curve files (FRichCurveKey, RichCurveKeyPropertyData, etc.) are untouched and remain under the MIT parity contract.",
+      "status": "active"
+    },
+    {
+      "id": "EXC-003",
+      "tool": "both",
+      "scope": {
+        "kind": "behavior",
+        "target": "GenerateUnversionedHeader throws when Mappings is null (write of unversioned properties without a usmap)"
+      },
+      "approved_by": "jpabscale",
+      "approved_on": "2026-08-04",
+      "reason": "UAssetAPI does not serialize Mappings (usmap schema) to JSON. After DeserializeJson, Mappings is null; writing an unversioned asset then requires re-attaching Mappings. C# UAssetAPI silently writes no header at all in this case (corrupt output). uasset4j instead throws a clear IllegalStateException telling the caller to re-attach Mappings, preventing silent corruption. This mirrors the read path, which already throws the equivalent error.",
+      "status": "active"
     }
   ]
 }

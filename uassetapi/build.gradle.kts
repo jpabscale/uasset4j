@@ -57,3 +57,7 @@ publishing {
     //   //> using repository https://jitpack.io
     //   //> using dep com.github.jpabscale:uasset4j:33ef77e
 }
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4g"
+}

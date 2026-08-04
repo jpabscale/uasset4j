@@ -15,6 +15,7 @@ import com.github.jpabscale.uasset4j.unrealtypes.FWorldTileInfo
 import com.github.jpabscale.uasset4j.exporttypes.ActorComponentExport
 import com.github.jpabscale.uasset4j.exporttypes.AssetImportDataExport
 import com.github.jpabscale.uasset4j.exporttypes.ClassExport
+import com.github.jpabscale.uasset4j.exporttypes.CurveTableExport
 import com.github.jpabscale.uasset4j.exporttypes.DataTableExport
 import com.github.jpabscale.uasset4j.exporttypes.EnumExport
 import com.github.jpabscale.uasset4j.exporttypes.Export
@@ -26,9 +27,11 @@ import com.github.jpabscale.uasset4j.exporttypes.NormalExport
 import com.github.jpabscale.uasset4j.exporttypes.PropertyExport
 import com.github.jpabscale.uasset4j.exporttypes.RawExport
 import com.github.jpabscale.uasset4j.exporttypes.SceneComponentExport
+import com.github.jpabscale.uasset4j.exporttypes.SerializedInterfaceReference
 import com.github.jpabscale.uasset4j.exporttypes.StringTableExport
 import com.github.jpabscale.uasset4j.exporttypes.StructExport
 import com.github.jpabscale.uasset4j.exporttypes.UDataTable
+import com.github.jpabscale.uasset4j.curves.UCurveTable
 import com.github.jpabscale.uasset4j.exporttypes.UserDefinedStructExport
 import com.github.jpabscale.uasset4j.propertytypes.objects.ArrayPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.objects.AssetObjectPropertyData
@@ -37,6 +40,7 @@ import com.github.jpabscale.uasset4j.propertytypes.objects.BytePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.objects.DelegatePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.objects.DoublePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.objects.EnumPropertyData
+import com.github.jpabscale.uasset4j.propertytypes.objects.FDelegate
 import com.github.jpabscale.uasset4j.propertytypes.objects.FieldPathPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.objects.FloatPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.objects.Int16PropertyData
@@ -99,6 +103,7 @@ import com.github.jpabscale.uasset4j.propertytypes.structs.engine.SkeletalMeshSa
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.SmartNamePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.SplinePropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.StringCurveKeyPropertyData
+import com.github.jpabscale.uasset4j.propertytypes.structs.engine.UniqueNetIdReplPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.Vector2MaterialInputPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.VectorMaterialInputPropertyData
 import com.github.jpabscale.uasset4j.propertytypes.structs.engine.ViewTargetBlendParamsPropertyData
@@ -249,6 +254,7 @@ import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_StringConst
 import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_StructConst
 import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_StructMemberContext
 import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_SwitchValue
+import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.FKismetSwitchCase
 import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_TextConst
 import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_Tracepoint
 import com.github.jpabscale.uasset4j.kismet.bytecode.expressions.EX_TransformConst
@@ -308,6 +314,7 @@ object UAssetTypeIds {
         StringClassReferencePropertyData::class,
         ColorPropertyData::class, DateTimePropertyData::class, GuidPropertyData::class,
         InstancedStructPropertyData::class, TimespanPropertyData::class,
+        UniqueNetIdReplPropertyData::class,
         FontCharacterPropertyData::class, ColorMaterialInputPropertyData::class,
         ExpressionInputPropertyData::class, FontDataPropertyData::class,
         KeyHandleMapPropertyData::class, MaterialAttributesInputPropertyData::class,
@@ -356,11 +363,12 @@ object UAssetTypeIds {
 
     private val exportClasses = listOf(
         Export::class, NormalExport::class, RawExport::class, DataTableExport::class,
-        ClassExport::class, EnumExport::class, FunctionExport::class, StructExport::class,
-        FieldExport::class, PropertyExport::class, MetaDataExport::class, LevelExport::class,
-        ActorComponentExport::class, SceneComponentExport::class, AssetImportDataExport::class,
-        StringTableExport::class, UserDefinedStructExport::class,
-        UDataTable::class,
+        CurveTableExport::class, ClassExport::class, EnumExport::class, FunctionExport::class,
+        StructExport::class, FieldExport::class, PropertyExport::class, MetaDataExport::class,
+        LevelExport::class, ActorComponentExport::class, SceneComponentExport::class,
+        AssetImportDataExport::class, StringTableExport::class, UserDefinedStructExport::class,
+        SerializedInterfaceReference::class,
+        UDataTable::class, UCurveTable::class,
     )
 
     private val fieldClasses = listOf(
@@ -439,6 +447,7 @@ object UAssetTypeIds {
         com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.FMatrix::class,
         com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.FTwoVectors::class,
         com.github.jpabscale.uasset4j.unrealtypes.objects.engine.FRichCurveKey::class,
+        com.github.jpabscale.uasset4j.unrealtypes.objects.engine.FUniqueNetId::class,
         com.github.jpabscale.uasset4j.propertytypes.structs.engine.FNavAgentSelector::class,
         com.github.jpabscale.uasset4j.unrealtypes.objects.engine.FSkeletalMeshSamplingRegionBuiltData::class,
         com.github.jpabscale.uasset4j.propertytypes.structs.engine.FStringCurveKey::class,
@@ -449,12 +458,19 @@ object UAssetTypeIds {
         com.github.jpabscale.uasset4j.unrealtypes.FObjectDataResource::class,
         com.github.jpabscale.uasset4j.propertytypes.objects.FFieldPath::class,
         FMovieSceneEventParameters::class,
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneEvaluationKey::class,
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.FFrameNumber::class,
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRange::class,
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.TRangeBound::class,
+        com.github.jpabscale.uasset4j.propertytypes.structs.movies.FMovieSceneSegment::class,
+        com.github.jpabscale.uasset4j.unrealtypes.objects.core.math.TBox::class,
     )
 
     private val pocoClasses = listOf(
         UAsset::class, CustomVersion::class, Import::class, FGenerationInfo::class,
         FAssetRegistryRecord::class, FImportTypeHierarchy::class, FGatherableTextData::class,
         FMetaData::class, FWorldTileInfo::class, FObjectThumbnail::class, FEngineVersion::class,
+        FDelegate::class,
     )
 
     private val kismetClasses = listOf(
@@ -482,6 +498,7 @@ object UAssetTypeIds {
         EX_SkipOffsetConst::class, EX_SoftObjectConst::class, EX_StringConst::class, EX_StructConst::class,
         EX_StructMemberContext::class, EX_SwitchValue::class, EX_TextConst::class, EX_Tracepoint::class,
         EX_TransformConst::class, EX_True::class, EX_UInt64Const::class, EX_UnicodeStringConst::class,
+        FKismetSwitchCase::class,
         EX_VariableBase::class, EX_Vector3fConst::class, EX_VectorConst::class, EX_VirtualFunction::class,
         EX_WireTracepoint::class,
     )
@@ -490,7 +507,9 @@ object UAssetTypeIds {
     private val explicitIds = mapOf(
         FEngineVersion::class.java to "UAssetAPI.FEngineVersion, UAssetAPI",
         UDataTable::class.java to "UAssetAPI.ExportTypes.UDataTable, UAssetAPI",
+        UCurveTable::class.java to "UAssetAPI.ExportTypes.UCurveTable, UAssetAPI",
         FFieldPath::class.java to "UAssetAPI.UnrealTypes.FFieldPath, UAssetAPI",
+        UniqueNetIdReplPropertyData::class.java to "UAssetAPI.UnrealTypes.UniqueNetIdReplPropertyData, UAssetAPI",
     )
 
     private val ids = linkedMapOf<Class<*>, String>()

@@ -23,6 +23,7 @@ import com.github.jpabscale.uasset4j.customversions.FUE5SpecialProjectStreamObje
 import com.github.jpabscale.uasset4j.json.UAssetJson
 import com.github.jpabscale.uasset4j.exporttypes.AssetImportDataExport
 import com.github.jpabscale.uasset4j.exporttypes.ClassExport
+import com.github.jpabscale.uasset4j.exporttypes.CurveTableExport
 import com.github.jpabscale.uasset4j.exporttypes.DataTableExport
 import com.github.jpabscale.uasset4j.exporttypes.EnumExport
 import com.github.jpabscale.uasset4j.exporttypes.Export
@@ -841,6 +842,7 @@ open class UAsset() : INameMap {
                 else -> {
                     when {
                         exportClassType.endsWith("DataTable") -> Exports[i] = Exports[i].ConvertToChildExport<DataTableExport>()
+                        exportClassType.endsWith("CurveTable") -> Exports[i] = Exports[i].ConvertToChildExport<CurveTableExport>()
                         exportClassType.endsWith("StringTable") -> Exports[i] = Exports[i].ConvertToChildExport<StringTableExport>()
                         exportClassType.endsWith("BlueprintGeneratedClass") -> Exports[i] = Exports[i].ConvertToChildExport<ClassExport>()
                         exportClassType == "ScriptStruct" -> Exports[i] = Exports[i].ConvertToChildExport<StructExport>()

@@ -6,7 +6,10 @@
 A **Kotlin/JVM port of [UAssetAPI](https://github.com/atenfyr/UAssetAPI)** — an Unreal Engine
 asset parser/serializer. It is an almost one-to-one, **statement-parallel** port, fully done by an
 LLM: the Kotlin source mirrors the C# source file-for-file, statement-for-statement, so upstream
-UAssetAPI changes stay cheap to adopt.
+UAssetAPI changes stay cheap to adopt. It also includes **curve support** derived from
+[CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0), providing dedicated types for
+`FRichCurve`, `FSimpleCurve`, `FCompressedRichCurve`, `UCurveTable`, and related classes that
+UAssetAPI lacks.
 
 > **Performance** — the in-JVM pipeline avoids per-asset subprocess round-trips: automod's
 > `.demo.sb` (Stellar Blade, same machine, same patches) ran in **52s** with uasset4j vs **2:38**
@@ -29,8 +32,14 @@ UAssetAPI changes stay cheap to adopt.
   [UAssetCLI](https://github.com/atenfyr/UAssetCLI). A fat/uber jar (`uassetcli.jar`) that runs
   anywhere a JVM runs (Linux, macOS, Windows). It is the CLI that tools fork today (e.g. automod's
   `tojson`/`fromjson` pipeline) and doubles as the parity harness.
+- **Curve support** — dedicated curve types derived from
+  [CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0, EXC-002):
+  `FRichCurve`/`FSimpleCurve` (with `Eval`), `FCompressedRichCurve` (decompression via
+  `ConverterMap` adapters), `UCurveTable` (`CurveTableExport`), `UCurveVector`,
+  `UCurveLinearColor`, `UCurveLinearColorAtlas`, `FCurveMetaData`, `FKeyHandle`. The existing
+  UAssetAPI-ported curve files (`FRichCurveKey`, `RichCurveKeyPropertyData`) remain unchanged.
 - **Ported tests** — `UAssetAPI.Tests` (MSTest) ported to JUnit 5, run against the same binary
-  corpus, plus a byte-for-byte JSON oracle test.
+  corpus, plus a byte-for-byte JSON oracle test, plus curve model unit tests.
 
 ### Scope
 
@@ -133,14 +142,24 @@ Functional parity is enforced by differential testing against the pinned C# orac
   python3 tools/sweep.py uassetcli/build/libs/uassetcli.jar \
       <dir-containing-UAssetCLI.dll> uassetapi/src/test/resources/testassets
   ```
-  Target state: `MATCH 68, DIFF 0, JVMERR 0`. `BOTHERR` assets are cases where *both* implementations
-  fail identically (the C# oracle itself crashes or throws) — they are oracle limitations, not port
-  bugs, and each is verified to fail with the same exception. `EXC` counts approved divergences from
+  Target state: `MATCH 369, DIFF 0, JVMERR 0, CSERR 0, BOTHERR 0`. The sweep isolates each asset
+  in a per-worker dir (the C# oracle fails on the same file opened concurrently) and decrypts
+  encrypted fixtures (e.g. Ace Combat 7) with a Python `AC7Decrypt` port before the parity CLIs,
+  mirroring the C# test. `BOTHERR` would be cases where *both* implementations fail identically
+  (oracle limitations, not port bugs). `EXC` counts approved divergences from
   `docs/parity-exceptions.json`.
 - **Differential** — `tools/differential.sh` byte-compares `tojson` on a given asset set.
 - **Round-trips** — `tojson → fromjson → tojson` must be stable; where C# is lossy (e.g.
   ClassExport CDO collapse), the JVM reproduces the identical lossy output.
-- **JUnit 5** — the ported `AssetUnitTests` and the JSON oracle test run via `./gradlew test`.
+- **JUnit 5** — the ported `AssetUnitTests`, the JSON oracle test, and curve model tests run via
+  `./gradlew test`.
+- **CUE4Parse curve parity** — `tools/cue4parse_parity.py` verifies that every C# curve type
+  member in the CUE4Parse reference source has a corresponding Kotlin implementation or approved
+  architecture exception (EXC-002):
+  ```
+  python3 tools/cue4parse_parity.py
+  ```
+  Target state: `PARITY AUDIT: GREEN`.
 - **Concurrency stress** — `tools/concurrency_stress.sh` runs parallel `tojson`/`fromjson`
   processes repeatedly and requires 100% pass: the exact scenario that broke the C# binary on
   Linux, proving the port fixes it.
@@ -189,9 +208,10 @@ The port is pinned to `UAssetAPI-33ef77e`; the submodule lives at
 
 ```
 uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/   # ported library (mirrors UAssetAPI/UAssetAPI)
-uassetapi/src/test/                                     # ported JUnit tests + oracle fixtures
+uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/curves/  # CUE4Parse derivative curve types (EXC-002)
+uassetapi/src/test/                                     # ported JUnit tests + oracle fixtures + curve tests
 uassetcli/                                              # thin CLI wrapper → UAssetCLI.jar (fat jar)
-tools/                                                  # parity harnesses (sweep.py, differential.sh, audit_parity.py)
+tools/                                                  # parity harnesses (sweep.py, differential.sh, audit_parity.py, cue4parse_parity.py)
 docs/mapping.md                                         # C# → Kotlin translation contract
 docs/port-tracker.md                                    # per-file port status + oracle notes
 ```
@@ -203,6 +223,13 @@ Copyright (c) 2020-2026 atenfyr). The repo ships [LICENSE](LICENSE) with UAssetA
 text and notice, plus its own copyright line, and every ported file carries an attribution header
 (`Ported from UAssetAPI (MIT) — Copyright (c) 2020-2026 atenfyr`). New parts (the CLI wrapper,
 `Zstd.kt`, the JSON/API layer) are also MIT.
+
+The curve support under `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/curves/` and
+`exporttypes/CurveTableExport.kt` is derivative work of
+[CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0, Copyright (c) FabianFG and
+contributors). These files carry Apache-2.0 attribution headers and `//@parity:on EXC-002` /
+`//@parity:off EXC-002` markers. See [NOTICE](NOTICE) and
+[docs/parity-exceptions.json](docs/parity-exceptions.json) for details.
 
 **The test corpus is NOT covered by MIT.** The 813 `TestAssets` fixtures are derived from games,
 testing-only, and remain the IP of their rights holders; `uassetapi/src/test/resources/testassets/NOTICE.md`

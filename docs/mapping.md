@@ -364,3 +364,72 @@ generic `T` field is unavoidable).
 
 - TestAssets corpus commit strategy (LFS vs fixtures-only) — decided when the testing milestone lands.
 - GraalVM native-image build for the CLI is optional (M7), not a design constraint.
+
+## Curve support (CUE4Parse derivative — EXC-002)
+
+The curve types in `uassetapi/src/main/kotlin/com/github/jpabscale/uasset4j/curves/` and
+`exporttypes/CurveTableExport.kt` are **not** UAssetAPI ports. They are Apache-2.0 **derivative
+work of CUE4Parse** (https://github.com/FabianFG/CUE4Parse), added as a deliberate extension beyond
+UAssetAPI (which lacks dedicated curve types). Recorded as **EXC-002** in
+`docs/parity-exceptions.json`; every derivative file carries the
+`//@parity:on EXC-002` / `//@parity:off EXC-002` markers and an attribution header.
+
+### Source layout
+
+| CUE4Parse (C#, Apache-2.0) | Here (Kotlin) |
+|---|---|
+| `UE4/Objects/Engine/Curves/RealCurve.cs` | `curves/FRealCurve.kt` |
+| `UE4/Objects/Engine/Curves/RichCurve.cs` | `curves/FRichCurve.kt`, `curves/FCompressedRichCurve.kt` |
+| `UE4/Objects/Engine/Curves/SimpleCurve.cs` | `curves/FSimpleCurve.kt` |
+| `UE4/Objects/Engine/Curves/FKeyHandle.cs` | `curves/FKeyHandle.kt` |
+| `UE4/Objects/Engine/Curves/FCurveMetaData.cs` | `curves/FCurveMetaData.kt` |
+| `UE4/Assets/Exports/Engine/UCurveTable.cs` (+`ECurveTableMode.cs`) | `curves/UCurveTable.kt` + `exporttypes/CurveTableExport.kt` |
+| `UE4/Assets/Exports/Texture/UCurveLinearColorAtlas.cs` | `curves/UCurveLinearColorAtlas.kt` |
+| `UE4/Objects/Engine/Curves/UCurveVector.cs` / `UCurveLinearColor.cs` | `curves/UCurveVector.kt` / `curves/UCurveLinearColor.kt` |
+| `UE4/Objects/Engine/Curves/FAnimCurveType` (in `FCurveMetaData.cs`) | `curves/FCurveMetaData.kt` (`FAnimCurveType`) |
+
+### What stays UAssetAPI-ported (untouched)
+
+`unrealtypes/objects/engine/FRichCurveKey.kt`, `propertytypes/structs/engine/RichCurveKeyPropertyData.kt`,
+`StringCurveKeyPropertyData.kt`, `NameCurveKeyPropertyData.kt`, and the curve enums in
+`unrealtypes/engineenums/EngineEnums.kt` remain MIT/UAssetAPI parity files and are not modified.
+
+### Mapping conventions (C# → Kotlin, this derivative subset)
+
+- CUE4Parse enums (`ERichCurveExtrapolation`, `ERichCurveCompressionFormat`,
+  `ERichCurveKeyTimeCompressionFormat`, `ECurveTableMode`) are ported as `enum class` in the
+  `curves` package, **without** the `_MAX` members that the UAssetAPI enums carry.
+  `ERichCurveInterpMode`/`TangentMode`/`TangentWeightMode` reuse the existing UAssetAPI enums.
+- CUE4Parse structs are `class`es with `var` members (matching the `struct`→class mapping above).
+- The `unsafe` pointer adapters in `FCompressedRichCurve` (`IKeyTimeAdapter`/`IKeyDataAdapter`,
+  `Quantized16BitKeyTimeAdapter`, `Float32BitKeyTimeAdapter`, `Uniform/Mixed/WeightedKeyDataAdapter`)
+  are ported with the same offset math over `ByteArray`; no unsafe code.
+- CUE4Parse's `[StructFallback]` property-tagged struct read is ported as the `fromStruct` helpers
+  (`FRichCurve.fromStruct`, `FSimpleCurve.fromStruct`, `fromStructRichCurveKey`,
+  `fromStructSimpleCurveKey`, and `FRealCurveCommon.populate`) in `curves/CurveStructAccess.kt`,
+  which walk a `StructPropertyData.Value` list by property name — matching the tagged/unversioned
+  property path CUE4Parse uses for real assets.
+- `UCurveTable` row values are property-serialized structs read through `StructPropertyData.Read`
+  (like `DataTableExport` rows), not raw binaries.
+- The `ShrinkCurveTableSize` gate is applied via
+  `asset.GetCustomVersion(GetCustomVersionGuidFromFriendlyName("FFortniteMainBranchObjectVersion"))`
+  compared against `FFortniteMainBranchObjectVersion.ShrinkCurveTableSize.ordinal`, matching the
+  `.ordinal` convention already used by `FWorldTileInfo.kt`.
+
+### Wire-order reconciliation (verified)
+
+CUE4Parse's `FRichCurveKey(FMutableArchive)` raw constructor reads the six floats **before** the
+three mode bytes; uasset4j reads **modes first**. The on-disk bytes (verified against StellarBlade
+UE4.26 `UCurveFloat` exports and the byte-identical uasset4j/UAssetAPI round-trip oracle) are
+**modes first**, so the new curve readers keep the modes-first order. CUE4Parse reaches its curve
+structs via the `[StructFallback]` property-tagged path for real assets, so its raw-archive
+constructor order is not observed in practice. See the note at the top of `curves/FRealCurve.kt`.
+
+### JSON shape (defined here, no oracle)
+
+There is no C# oracle for the dedicated curve types, so the JSON shape is ours to define but must
+round-trip byte-identically (read → write → read is stable). The curve containers
+(`FRichCurve`, `FSimpleCurve`, `FCompressedRichCurve`) serialize as plain beans (Jackson default),
+and `CurveTableExport` mirrors `DataTableExport` (`Table` field holding a `UCurveTable` with
+`CurveTableMode` + `RowMap`). Registering the new classes in `json/TypeIds.kt` (export + poco lists,
+plus the `UCurveTable` mixin) gives them their `$type` ids.
