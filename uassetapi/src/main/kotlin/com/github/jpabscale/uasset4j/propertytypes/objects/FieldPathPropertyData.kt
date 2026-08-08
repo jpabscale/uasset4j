@@ -52,6 +52,21 @@ class FieldPathPropertyData : PropertyData {
     override val HasCustomStructSerialization: Boolean get() = false
     override val DefaultValue: Any get() = FFieldPath()
 
+    override fun Read(reader: AssetBinaryReader, includeHeader: Boolean, leng1: Long, leng2: Long, serializationContext: PropertySerializationContext) {
+        if (includeHeader) {
+            this.ReadEndPropertyTag(reader)
+        }
+        Value = FFieldPath.Read(reader)
+    }
+
+    override fun Write(writer: AssetBinaryWriter, includeHeader: Boolean, serializationContext: PropertySerializationContext): Int {
+        if (includeHeader) {
+            this.WriteEndPropertyTag(writer)
+        }
+        if (Value == null) Value = FFieldPath()
+        return Value!!.Write(writer)
+    }
+
     override fun toString(): String = ""
 
     override fun FromString(d: Array<String>, asset: UAsset) {

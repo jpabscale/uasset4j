@@ -33,7 +33,8 @@ UAssetAPI lacks.
   anywhere a JVM runs (Linux, macOS, Windows). It is the CLI that tools fork today (e.g. automod's
   `tojson`/`fromjson` pipeline) and doubles as the parity harness.
 - **Curve support** — dedicated curve types derived from
-  [CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0, EXC-002):
+  [CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0, EXC-002), pinned to
+  commit `e9f24e0`:
   `FRichCurve`/`FSimpleCurve` (with `Eval`), `FCompressedRichCurve` (decompression via
   `ConverterMap` adapters), `UCurveTable` (`CurveTableExport`), `UCurveVector`,
   `UCurveLinearColor`, `UCurveLinearColorAtlas`, `FCurveMetaData`, `FKeyHandle`. The existing
@@ -55,10 +56,13 @@ JVM drop-in). Out of scope:
 
 ## Why
 
-UAssetCLI (the C# binary) is the build-time asset tool used by the modding pipeline. It is
-single-platform (Linux-only `.dll`), crashes under Linux parallel builds, and blocks macOS. A JVM
-port gives one binary that runs on every platform and, as a library, can be loaded in-process by
-the tooling that currently subprocesses it.
+UAssetCLI (the C# binary) is the build-time asset tool used by the modding pipeline. As a .NET
+assembly it runs on any platform with the .NET runtime installed, but it is not reliable across
+platforms: it fails to serialize uassets on macOS, it crashed under Linux parallel builds, and
+.NET's behavior is not identical across platforms (e.g. directory enumeration order). Both the
+C# and JVM binaries need a runtime (`.NET` vs a JVM 21+), but the JVM port behaves
+consistently on every platform and, as a library, can be loaded in-process by the JVM tooling
+(e.g. automod) that currently subprocesses the C# binary.
 
 ### Config safety
 
@@ -188,15 +192,16 @@ The port is pinned to `UAssetAPI-33ef77e`; the submodule lives at
 
 ## Publishing
 
-- **Git tag** a release (e.g. `33ef77e`, `33ef77e.1`) to publish. The Gradle project
-  version is derived from the tag (`git describe`), so the artifact version always
-  matches the ref it was built from.
+- **Git tag** a release as `<uassetapi-sha>.<cue4parse-sha>.<ref>` (e.g. `33ef77e.e9f24e0.1`)
+  to publish — both upstream pins are encoded in the tag and `<ref>` is a monotonic
+  release counter. The Gradle project version is derived from the tag (`git describe`),
+  so the artifact version always matches the ref it was built from.
 - **JitPack** builds the library on demand from the tag. The consuming coordinate is
   `com.github.jpabscale:uasset4j:<tag>` (JitPack maps the group by user, artifact by repo) —
   automod:
   ```
   //> using repository https://jitpack.io
-  //> using dep com.github.jpabscale:uasset4j:33ef77e
+  //> using dep com.github.jpabscale:uasset4j:33ef77e.e9f24e0.1
   ```
 - **GitHub Actions** (`.github/workflows/ci.yml`) builds and runs the full test suite on
   every push/PR, and on a tag push creates a GitHub Release whose asset is the

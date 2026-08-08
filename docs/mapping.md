@@ -374,6 +374,10 @@ UAssetAPI (which lacks dedicated curve types). Recorded as **EXC-002** in
 `docs/parity-exceptions.json`; every derivative file carries the
 `//@parity:on EXC-002` / `//@parity:off EXC-002` markers and an attribution header.
 
+> **Pinned CUE4Parse commit: `e9f24e0`** (= `e9f24e03c33d60a00dfd7e4d012bad26c6509547`, recorded
+> in `gradle.properties` as `cue4parse.pinned.sha`). The curves derivative is ported from this exact
+> tree; `tools/cue4parse_parity.py` audits member coverage against this checkout.
+
 ### Source layout
 
 | CUE4Parse (C#, Apache-2.0) | Here (Kotlin) |

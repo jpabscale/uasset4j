@@ -55,7 +55,8 @@ asset turning DIFF) must be caught and fixed before the task is considered done.
   carry doc comments where they explain non-obvious parity behavior — this is the documented
   exception in `docs/mapping.md`.)
 - **CUE4Parse derivative files** (`curves/`, `exporttypes/CurveTableExport.kt`) are Apache-2.0
-  licensed (EXC-002). They carry `//@parity:on EXC-002` / `//@parity:off EXC-002` markers and
+  licensed (EXC-002), pinned to CUE4Parse commit `e9f24e0` (see `gradle.properties`
+  `cue4parse.pinned.sha`). They carry `//@parity:on EXC-002` / `//@parity:off EXC-002` markers and
   attribution headers. These files are NOT statement-parallel UAssetAPI ports — they are new code
   derived from CUE4Parse. Review them against CUE4Parse's source, not UAssetAPI. Run
   `tools/cue4parse_parity.py` to verify C# member coverage.

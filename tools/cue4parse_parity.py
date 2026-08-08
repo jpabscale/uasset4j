@@ -137,11 +137,53 @@ def extract_kt_members(path):
     return members
 
 
+def read_pinned_sha():
+    """Reads cue4parse.pinned.sha from gradle.properties (single source of truth)."""
+    props = os.path.join(REPO, "gradle.properties")
+    if not os.path.exists(props):
+        return None
+    with open(props, encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("cue4parse.pinned.sha="):
+                return line.strip().split("=", 1)[1]
+    return None
+
+
+def check_pinned_checkout():
+    """Warns if the CUE4Parse checkout at CS_BASE is not at the pinned commit."""
+    pinned = read_pinned_sha()
+    if not pinned:
+        return "  WARN: cue4parse.pinned.sha missing in gradle.properties"
+    git_dir = os.path.join(CS_BASE, os.pardir, ".git")
+    head = os.path.join(git_dir, "HEAD")
+    if not os.path.exists(head):
+        return f"  WARN: CUE4Parse checkout not a git repo at {CS_BASE} (cannot verify pin {pinned})"
+    try:
+        with open(head) as f:
+            ref = f.read().strip()
+        actual = None
+        if ref.startswith("ref:"):
+            ref_path = os.path.join(git_dir, ref[5:].strip())
+            if os.path.exists(ref_path):
+                with open(ref_path) as f:
+                    actual = f.read().strip()
+        else:
+            actual = ref
+        if actual and not actual.startswith(pinned):
+            return f"  WARN: CUE4Parse checkout at {actual[:12]} is NOT the pinned commit {pinned[:12]}"
+        return None
+    except OSError as e:
+        return f"  WARN: could not read CUE4Parse checkout HEAD: {e}"
+
+
 def main():
     exceptions = load_registry()
     errors = []
     excs = []
     info = []
+    pin_warn = check_pinned_checkout()
+    if pin_warn:
+        info.append(pin_warn)
 
     for cs_rel, kt_files in TYPE_MAP.items():
         cs_path = os.path.join(CS_BASE, cs_rel)
